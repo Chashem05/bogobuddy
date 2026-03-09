@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Bogo Buddy" />
+<meta name="theme-color" content="#1b4332" />
+<title>Bogo Buddy</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: Georgia, serif;
+    background: #1b4332;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #app {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: -webkit-fill-available;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+    background: #f8f4ee;
+    position: relative;
+    overflow: hidden;
+  }
+  .screen {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 80px;
+  }
+  .screen.no-nav { padding-bottom: 0; }
+
+  /* Status bar area for notch phones */
+  .status-bar {
+    background: #1b4332;
+    color: #fff;
+    font-size: 12px;
+    font-family: monospace;
+    padding: env(safe-area-inset-top, 8px) 24px 6px;
+    display: flex;
+    justify-content: space-between;
+    min-height: 36px;
+    align-items: flex-end;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 60px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: #00e676;
+    color: #000;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 14px;
+    z-index: 999;
+    box-shadow: 0 4px 24px rgba(0,230,118,0.4);
+    opacity: 0;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Bottom Nav */
+  #bottom-nav {
+    display: flex;
+    border-top: 1px solid #e0e0e0;
+    background: #fff;
+    padding: 8px 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+  }
+  .nav-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 0;
+    font-size: 20px;
+  }
+  .nav-label {
+    font-size: 9px;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+    color: #aaa;
+    font-weight: 400;
+  }
+  .nav-btn.active .nav-label { color: #1b4332; font-weight: 800; }
+
+  /* Common */
+  .pad { padding: 20px; }
+  h1 { font-size: 32px; font-weight: 900; color: #1b4332; line-height: 1.1; }
+  h2 { font-size: 22px; font-weight: 900; color: #1b4332; }
+  h3 { font-size: 18px; font-weight: 800; color: #1b4332; }
+  p { font-size: 14px; color: #555; line-height: 1.5; }
+  .sub { color: #888; font-size: 14px; margin-top: 8px; }
+  .mono { font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #888; text-transform: uppercase; }
+
+  label { display: block; font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #888; text-transform: uppercase; margin-bottom: 6px; margin-top: 14px; }
+  input, select, textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid #ddd;
+    font-family: Georgia, serif; font-size: 15px; background: #fff; color: #333;
+    outline: none; appearance: none; -webkit-appearance: none;
+  }
+  input:focus, select:focus { border-color: #1b4332; }
+
+  .btn {
+    display: block; width: 100%; padding: 14px; border-radius: 14px; border: none;
+    font-family: Georgia, serif; font-weight: 800; font-size: 16px; cursor: pointer;
+    margin-top: 12px; text-align: center;
+  }
+  .btn-green { background: #1b4332; color: #fff; }
+  .btn-lime { background: #00e676; color: #000; }
+  .btn-grey { background: #ccc; color: #999; }
+
+  .card {
+    background: #fff; border-radius: 16px; padding: 16px;
+    margin-bottom: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #eee;
+  }
+
+  .back-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+  }
+  .back-btn {
+    border: none; background: #eee; border-radius: 999px; width: 36px; height: 36px;
+    cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .chip {
+    display: inline-block; padding: 6px 12px; border-radius: 999px;
+    border: 2px solid #ddd; background: #fff; font-family: Georgia, serif;
+    font-size: 13px; cursor: pointer; font-weight: 600; margin: 4px 4px 4px 0;
+    transition: all 0.15s;
+  }
+  .chip.selected { background: #1b4332; color: #fff; border-color: #1b4332; }
+
+  .step-bar { display: flex; gap: 6px; margin-bottom: 24px; }
+  .step-seg { height: 4px; flex: 1; border-radius: 999px; background: #ddd; transition: background 0.3s; }
+  .step-seg.done { background: #1b4332; }
+
+  /* Deal badge */
+  .badge {
+    font-size: 10px; font-family: monospace; font-weight: 700;
+    padding: 4px 8px; border-radius: 999px;
+  }
+  .badge-open { background: #fff0d6; color: #b35c00; border: 1px solid #f0a840; }
+  .badge-sched { background: #1b4332; color: #fff; }
+
+  /* Buddy card */
+  .buddy-avatar {
+    width: 46px; height: 46px; border-radius: 999px; background: #e8f5e9;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+
+  /* Chat */
+  #chat-messages {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .msg-bubble {
+    max-width: 75%; padding: 10px 14px; border-radius: 18px;
+    font-size: 14px; line-height: 1.5;
+  }
+  .msg-me { background: #1b4332; color: #fff; border-radius: 18px 18px 4px 18px; align-self: flex-end; }
+  .msg-them { background: #fff; color: #333; border-radius: 18px 18px 18px 4px; align-self: flex-start; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .msg-name { font-size: 11px; font-weight: 700; color: #00a854; margin-bottom: 2px; }
+  .msg-time { font-size: 10px; opacity: 0.5; text-align: right; margin-top: 4px; }
+
+  /* Time chips */
+  .time-chip {
+    display: inline-block; padding: 8px 14px; border-radius: 999px;
+    border: 2px solid #ddd; background: #fff; font-family: Georgia, serif;
+    font-size: 13px; cursor: pointer; margin: 4px 4px 4px 0;
+  }
+  .time-chip.selected { border-color: #00e676; background: #e8f5e9; }
+
+  /* Check-in cards */
+  .checkin-card {
+    flex: 1; background: #fff; border-radius: 14px; padding: 14px;
+    text-align: center; border: 2px solid #eee; transition: border-color 0.3s;
+  }
+  .checkin-card.arrived { border-color: #00e676; }
+  .checkin-btn {
+    border: none; border-radius: 999px; padding: 8px 16px;
+    font-size: 12px; font-family: monospace; cursor: pointer; font-weight: 700; margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="status-bar">
+    <span id="clock">9:41 AM</span>
+    <span>●●●  WiFi  🔋</span>
+  </div>
+  <div id="toast"></div>
+  <div id="screen-container" style="flex:1;display:flex;flex-direction:column;overflow:hidden;"></div>
+  <nav id="bottom-nav" style="display:none;">
+    <button class="nav-btn" data-screen="dashboard" onclick="goTo('dashboard')">
+      <span>🏠</span><span class="nav-label">HOME</span>
+    </button>
+    <button class="nav-btn" data-screen="post" onclick="goTo('post')">
+      <span>📣</span><span class="nav-label">POST</span>
+    </button>
+    <button class="nav-btn" data-screen="schedule" onclick="goTo('schedule')">
+      <span>📅</span><span class="nav-label">SCHEDULE</span>
+    </button>
+    <button class="nav-btn" data-screen="chat" onclick="goTo('chat')">
+      <span>💬</span><span class="nav-label">CHAT</span>
+    </button>
+    <button class="nav-btn" data-screen="buddies" onclick="goTo('buddies')">
+      <span>👥</span><span class="nav-label">BUDDIES</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let state = {
+  screen: 'onboard',
+  onboardStep: 0,
+  zip: '',
+  selectedStores: [],
+  activeStore: 'Kroger',
+  chatMessages: [
+    { from: 'Maria S.', text: 'Hey! I saw your pasta sauce deal 👀', time: '2:31pm' },
+    { from: 'you', text: 'Yes! BOGO at Kroger, ends Sunday', time: '2:32pm' },
+    { from: 'Maria S.', text: "I'm in! When are you heading there?", time: '2:33pm' },
+  ],
+  checkedIn: false,
+  selectedBuddy: '',
+  selectedDate: '',
+  selectedTime: '',
+};
+
+const stores = ['Kroger', 'Publix', 'Walmart', 'Target', 'Aldi', 'Whole Foods'];
+const buddies = {
+  Kroger: [{ name: 'Maria S.', rating: 4.9, deals: 23, avatar: '🧑‍🦱' }, { name: 'James T.', rating: 4.7, deals: 15, avatar: '👩‍🦰' }],
+  Publix: [{ name: 'DeShawn K.', rating: 5.0, deals: 31, avatar: '🧔' }],
+};
+const deals = [
+  { item: 'Ragu Pasta Sauce', store: 'Kroger', price: '$3.99', postedBy: 'You', time: '2m ago', status: 'open' },
+  { item: 'Tropicana OJ (64oz)', store: 'Publix', price: '$5.49', postedBy: 'Maria S.', time: '1h ago', status: 'scheduled' },
+];
+
+// ── CLOCK ──────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function goTo(screen) {
+  state.screen = screen;
+  render();
+  document.getElementById('screen-container').scrollTop = 0;
+}
+
+function updateNav(screen) {
+  const nav = document.getElementById('bottom-nav');
+  const noNav = ['onboard'];
+  nav.style.display = noNav.includes(screen) ? 'none' : 'flex';
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.screen === screen);
+  });
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function render() {
+  const container = document.getElementById('screen-container');
+  updateNav(state.screen);
+  switch(state.screen) {
+    case 'onboard':   container.innerHTML = renderOnboard(); break;
+    case 'dashboard': container.innerHTML = renderDashboard(); break;
+    case 'post':      container.innerHTML = renderPost(); break;
+    case 'schedule':  container.innerHTML = renderSchedule(); break;
+    case 'meetup':    container.innerHTML = renderMeetup(); break;
+    case 'chat':      container.innerHTML = renderChat(); setupChat(); break;
+    case 'buddies':   container.innerHTML = renderBuddies(); break;
+  }
+}
+
+// ── ONBOARDING ─────────────────────────────────────────────────────────────
+function renderOnboard() {
+  const steps = [renderOnboard0, renderOnboard1, renderOnboard2, renderOnboard3];
+  return `<div style="flex:1;display:flex;flex-direction:column;height:100%;">${steps[state.onboardStep]()}</div>`;
+}
+
+function renderOnboard0() {
+  return `
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;background:linear-gradient(160deg,#1b4332 0%,#2d6a4f 100%);min-height:calc(100vh - 44px);">
+    <div style="font-size:80px;margin-bottom:20px;">🛒</div>
+    <h1 style="color:#fff;font-size:44px;margin-bottom:16px;">Bogo<br>Buddy</h1>
+    <p style="color:rgba(255,255,255,0.75);font-size:17px;line-height:1.7;max-width:260px;">Split BOGO deals with a neighbor.<br>Shop smarter, save together.</p>
+    <button class="btn btn-lime" style="margin-top:32px;max-width:280px;" onclick="state.onboardStep=1;render()">Get Started →</button>
+  </div>`;
+}
+
+function renderOnboard1() {
+  return `
+  <div class="screen no-nav pad">
+    <div class="step-bar">
+      <div class="step-seg done"></div><div class="step-seg"></div><div class="step-seg"></div>
+    </div>
+    <h2>What's your zip code?</h2>
+    <p class="sub">We'll match you with buddies nearby.</p>
+    <label>ZIP CODE</label>
+    <input id="zip-input" type="tel" inputmode="numeric" maxlength="5" placeholder="e.g. 33511" value="${state.zip}" oninput="state.zip=this.value;updateZipBtn()" />
+    <button id="zip-btn" class="btn ${state.zip.length>=5?'btn-green':'btn-grey'}" onclick="state.zip.length>=5&&(state.onboardStep=2,render())">Next →</button>
+  </div>`;
+}
+
+function updateZipBtn() {
+  const btn = document.getElementById('zip-btn');
+  if (btn) {
+    btn.className = 'btn ' + (state.zip.length >= 5 ? 'btn-green' : 'btn-grey');
+  }
+}
+
+function renderOnboard2() {
+  return `
+  <div class="screen no-nav pad">
+    <div class="step-bar">
+      <div class="step-seg done"></div><div class="step-seg done"></div><div class="step-seg"></div>
+    </div>
+    <h2>Where do you shop?</h2>
+    <p class="sub">Select all your regular stores.</p>
+    <div style="margin-top:16px;">
+      ${stores.map(s => `<span class="chip ${state.selectedStores.includes(s)?'selected':''}" onclick="toggleStore('${s}')">${s}</span>`).join('')}
+    </div>
+    <button class="btn ${state.selectedStores.length>0?'btn-green':'btn-grey'}" style="margin-top:32px;" onclick="state.selectedStores.length>0&&(state.onboardStep=3,render())">Next →</button>
+  </div>`;
+}
+
+function toggleStore(s) {
+  const i = state.selectedStores.indexOf(s);
+  if (i > -1) state.selectedStores.splice(i, 1);
+  else state.selectedStores.push(s);
+  render();
+}
+
+function renderOnboard3() {
+  return `
+  <div class="screen no-nav pad" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 44px);text-align:center;">
+    <div class="step-bar">
+      <div class="step-seg done"></div><div class="step-seg done"></div><div class="step-seg done"></div>
+    </div>
+    <div style="font-size:60px;margin-bottom:20px;">🎉</div>
+    <h2>You're all set!</h2>
+    <p class="sub" style="max-width:260px;margin:10px auto 0;">We found <strong>3 buddies</strong> near you across your stores. Time to start saving!</p>
+    <button class="btn btn-green" style="max-width:280px;margin-top:28px;" onclick="goTo('dashboard')">Meet My Buddies →</button>
+  </div>`;
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const myStores = state.selectedStores.length > 0 ? state.selectedStores : ['Kroger', 'Publix'];
+  return `
+  <div class="screen pad">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <div>
+        <p class="mono">GOOD MORNING</p>
+        <h2 style="margin-top:4px;">My Stores</h2>
+      </div>
+      <button onclick="toast('Profile coming soon!')" style="background:#1b4332;border:none;border-radius:999px;width:42px;height:42px;font-size:18px;cursor:pointer;">👤</button>
+    </div>
+
+    ${myStores.map(store => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h3>${store}</h3>
+          <p style="font-size:12px;color:#888;margin-top:2px;">${(buddies[store]||[]).length} buddy${(buddies[store]||[]).length!==1?'s':''} matched</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="goTo('schedule')" style="padding:6px 10px;border-radius:999px;border:1px solid #ddd;background:#f0f0f0;font-size:12px;cursor:pointer;">📅</button>
+          <button onclick="state.activeStore='${store}';goTo('chat')" style="padding:6px 10px;border-radius:999px;border:1px solid #ddd;background:#f0f0f0;font-size:12px;cursor:pointer;">💬</button>
+        </div>
+      </div>
+    </div>`).join('')}
+
+    <p class="mono" style="margin:16px 0 10px;">RECENT DEALS</p>
+    ${deals.map(d => `
+    <div style="background:${d.status==='scheduled'?'#e8f5e9':'#fff'};border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid ${d.status==='scheduled'?'#a5d6a7':'#eee'};display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <p style="margin:0;font-weight:700;font-size:14px;color:#1b4332;">${d.item}</p>
+        <p style="margin:2px 0 0;font-size:12px;color:#888;">${d.store} · ${d.price} each · ${d.time}</p>
+      </div>
+      <span class="badge badge-${d.status==='scheduled'?'sched':'open'}">${d.status.toUpperCase()}</span>
+    </div>`).join('')}
+
+    <button class="btn btn-lime" style="margin-top:12px;font-size:16px;" onclick="goTo('post')">+ Post a BOGO Deal</button>
+  </div>`;
+}
+
+// ── POST DEAL ──────────────────────────────────────────────────────────────
+function renderPost() {
+  const myStores = state.selectedStores.length > 0 ? state.selectedStores : ['Kroger', 'Publix'];
+  return `
+  <div class="screen pad">
+    <div class="back-header">
+      <button class="back-btn" onclick="goTo('dashboard')">←</button>
+      <h2>Post a Deal</h2>
+    </div>
+    <p class="sub">Spotted a BOGO? Let your buddies know!</p>
+    <label>STORE</label>
+    <select id="deal-store">
+      ${myStores.map(s=>`<option>${s}</option>`).join('')}
+    </select>
+    <label>ITEM NAME</label>
+    <input id="deal-item" type="text" placeholder="e.g. Ragu Pasta Sauce" />
+    <label>PRICE (EACH)</label>
+    <input id="deal-price" type="text" inputmode="decimal" placeholder="e.g. $3.99" />
+    <label>NOTE (OPTIONAL)</label>
+    <input id="deal-note" type="text" placeholder="e.g. Aisle 7, ends Sunday" />
+    <button class="btn btn-green" style="margin-top:20px;" onclick="postDeal()">📣 Notify My Buddies</button>
+  </div>`;
+}
+
+function postDeal() {
+  const item = document.getElementById('deal-item').value;
+  if (!item.trim()) { toast('Enter an item name first!'); return; }
+  toast('Deal posted! Buddies notified 🔔');
+  setTimeout(() => goTo('dashboard'), 400);
+}
+
+// ── SCHEDULE ───────────────────────────────────────────────────────────────
+function renderSchedule() {
+  const allBuddies = ['Maria S.', 'James T.', 'DeShawn K.'];
+  const times = ['8:00 AM','10:00 AM','12:00 PM','2:00 PM','4:00 PM','6:00 PM'];
+  return `
+  <div class="screen pad">
+    <div class="back-header">
+      <button class="back-btn" onclick="goTo('dashboard')">←</button>
+      <h2>Schedule Store Run</h2>
+    </div>
+    <p class="sub">Pick a time to shop with your buddy.</p>
+
+    <label>SELECT BUDDY</label>
+    <div style="margin-bottom:4px;">
+      ${allBuddies.map(b=>`<span class="chip ${state.selectedBuddy===b?'selected':''}" onclick="state.selectedBuddy='${b}';render()">${b}</span>`).join('')}
+    </div>
+
+    <label>DATE</label>
+    <input id="sched-date" type="date" value="${state.selectedDate}" oninput="state.selectedDate=this.value" />
+
+    <label>TIME</label>
+    <div style="margin-top:4px;">
+      ${times.map(t=>`<span class="time-chip ${state.selectedTime===t?'selected':''}" onclick="state.selectedTime='${t}';render()">${t}</span>`).join('')}
+    </div>
+
+    <button class="btn ${state.selectedBuddy&&state.selectedDate&&state.selectedTime?'btn-green':'btn-grey'}" style="margin-top:20px;" onclick="scheduleRun()">📅 Send Invite to Buddy</button>
+  </div>`;
+}
+
+function scheduleRun() {
+  if (!state.selectedBuddy || !state.selectedDate || !state.selectedTime) {
+    toast('Fill in all fields first!'); return;
+  }
+  toast('Store run scheduled! ✅');
+  setTimeout(() => goTo('meetup'), 400);
+}
+
+// ── MEETUP ─────────────────────────────────────────────────────────────────
+function renderMeetup() {
+  const buddy = state.selectedBuddy || 'Maria S.';
+  const dateStr = state.selectedDate ? new Date(state.selectedDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) : 'Sunday, March 15';
+  const timeStr = state.selectedTime || '10:00 AM';
+  return `
+  <div class="screen pad">
+    <div class="back-header">
+      <button class="back-btn" onclick="goTo('dashboard')">←</button>
+      <h2>Live Meetup</h2>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#1b4332,#2d6a4f);border-radius:20px;padding:20px;margin-bottom:20px;color:#fff;text-align:center;">
+      <p class="mono" style="color:rgba(255,255,255,0.6);margin-bottom:4px;">TODAY'S RUN</p>
+      <h3 style="color:#fff;font-size:22px;">Kroger · Brandon</h3>
+      <p style="color:rgba(255,255,255,0.8);margin-top:8px;">${dateStr} · ${timeStr}</p>
+      <p style="color:#00e676;font-weight:700;margin-top:4px;">with ${buddy}</p>
+    </div>
+
+    <div style="background:#fff0d6;border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid #f0a840;">
+      <p class="mono" style="color:#b35c00;margin-bottom:4px;">BOGO TARGET</p>
+      <p style="font-weight:800;font-size:16px;color:#1b4332;margin:0;">Ragu Pasta Sauce</p>
+      <p style="font-size:13px;color:#888;margin:4px 0 0;">$3.99 each · You save $3.99 total</p>
+    </div>
+
+    <p class="mono" style="margin-bottom:10px;">ARRIVAL CHECK-IN</p>
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <div class="checkin-card ${state.checkedIn?'arrived':''}">
+        <p style="font-weight:700;font-size:13px;color:#1b4332;">You</p>
+        <button class="checkin-btn" style="background:${state.checkedIn?'#00e676':'#f5f5f5'};color:${state.checkedIn?'#000':'#999'};" onclick="checkIn()">${state.checkedIn?'✓ HERE':"I'm Here!"}</button>
+      </div>
+      <div class="checkin-card">
+        <p style="font-weight:700;font-size:13px;color:#1b4332;">${buddy}</p>
+        <button class="checkin-btn" style="background:#f5f5f5;color:#999;cursor:default;">Pending…</button>
+      </div>
+    </div>
+
+    ${state.checkedIn ? `
+    <div style="background:#e8f5e9;border-radius:14px;padding:16px;border:1px solid #a5d6a7;margin-bottom:12px;">
+      <p style="font-weight:700;color:#1b4332;font-size:14px;margin:0;">✅ You're checked in!</p>
+      <p style="font-size:13px;color:#555;margin:4px 0 0;">Waiting for ${buddy} to arrive… sent a ping!</p>
+    </div>` : ''}
+
+    <button class="btn btn-green" onclick="state.activeStore='Kroger';goTo('chat')">💬 Chat with ${buddy}</button>
+  </div>`;
+}
+
+function checkIn() {
+  state.checkedIn = true;
+  toast('Checked in! 📍');
+  render();
+}
+
+// ── CHAT ───────────────────────────────────────────────────────────────────
+function renderChat() {
+  const store = state.activeStore || 'Kroger';
+  const storeBuddies = (buddies[store]||[]).map(b=>b.name).join(', ') || 'No buddies yet';
+  return `
+  <div style="flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    <div style="padding:14px 20px 10px;border-bottom:1px solid #eee;background:#f8f4ee;">
+      <div class="back-header" style="margin-bottom:4px;">
+        <button class="back-btn" onclick="goTo('dashboard')">←</button>
+        <h2>${store} Buddies</h2>
+      </div>
+      <p style="font-size:12px;color:#888;margin:0 0 0 48px;">${storeBuddies}</p>
+    </div>
+    <div id="chat-messages" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f8f4ee;padding-bottom:20px;">
+      ${state.chatMessages.map(m => m.from === 'you'
+        ? `<div class="msg-bubble msg-me">${m.text}<div class="msg-time">${m.time}</div></div>`
+        : `<div class="msg-bubble msg-them"><div class="msg-name">${m.from}</div>${m.text}<div class="msg-time">${m.time}</div></div>`
+      ).join('')}
+    </div>
+    <div style="padding:10px 14px;border-top:1px solid #eee;background:#fff;display:flex;gap:8px;padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px));">
+      <input id="chat-input" type="text" placeholder="Message your buddies…" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid #ddd;font-family:Georgia,serif;font-size:15px;" onkeydown="if(event.key==='Enter')sendChat()" />
+      <button onclick="sendChat()" style="background:#1b4332;color:#fff;border:none;border-radius:12px;width:44px;height:44px;font-size:18px;cursor:pointer;flex-shrink:0;">↑</button>
+    </div>
+  </div>`;
+}
+
+function setupChat() {
+  const msgs = document.getElementById('chat-messages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  if (!input || !input.value.trim()) return;
+  const now = new Date();
+  const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  state.chatMessages.push({ from: 'you', text: input.value.trim(), time });
+  render();
+  setTimeout(() => {
+    const msgs = document.getElementById('chat-messages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    const newInput = document.getElementById('chat-input');
+    if (newInput) newInput.focus();
+  }, 50);
+}
+
+// ── BUDDIES ────────────────────────────────────────────────────────────────
+function renderBuddies() {
+  const myStores = state.selectedStores.length > 0 ? state.selectedStores.filter(s => buddies[s]) : ['Kroger', 'Publix'];
+  return `
+  <div class="screen pad">
+    <div class="back-header">
+      <button class="back-btn" onclick="goTo('dashboard')">←</button>
+      <h2>My Buddies</h2>
+    </div>
+    ${myStores.map(store => `
+    <p class="mono" style="margin-bottom:10px;">${store}</p>
+    ${(buddies[store]||[]).map(b=>`
+    <div class="card" style="display:flex;align-items:center;gap:14px;">
+      <div class="buddy-avatar">${b.avatar}</div>
+      <div style="flex:1;">
+        <p style="font-weight:800;font-size:15px;color:#1b4332;margin:0;">${b.name}</p>
+        <p style="font-size:12px;color:#888;margin:2px 0 0;">⭐ ${b.rating} · ${b.deals} deals split</p>
+      </div>
+      <button onclick="toast('Looking for a new buddy…')" style="border:1px solid #ddd;background:#fff;border-radius:8px;padding:6px 10px;font-size:11px;font-family:monospace;cursor:pointer;color:#888;">Replace</button>
+    </div>`).join('')}
+    <button onclick="toast('Looking for more buddies nearby…')" style="width:100%;padding:12px;border-radius:12px;border:2px dashed #ccc;background:transparent;font-family:Georgia,serif;font-size:14px;color:#888;cursor:pointer;margin-bottom:20px;">+ Add Another Buddy</button>
+    `).join('')}
+  </div>`;
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
