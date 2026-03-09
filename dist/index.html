@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Bogo Buddy"/>
+<meta name="theme-color" content="#1b4332"/>
+<title>Bogo Buddy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body,#root{height:100%;height:-webkit-fill-available;overflow:hidden;background:#1b4332}
+body{font-family:Georgia,serif}
+input,select,textarea,button{font-family:Georgia,serif}
+::-webkit-scrollbar{width:0;background:transparent}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.slide-up{animation:slideUp 0.3s ease forwards}
+.fade-in{animation:fadeIn 0.3s ease forwards}
+
+/* Layout */
+#app{max-width:480px;margin:0 auto;height:100dvh;height:-webkit-fill-available;display:flex;flex-direction:column;background:#f8f4ee;position:relative;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,0.4)}
+.screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 20px 90px}
+.screen.no-pad{padding:0}
+.screen.no-nav{padding-bottom:20px}
+
+/* Bottom Nav */
+#nav{display:flex;border-top:1px solid #e8e8e8;background:#fff;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-btn{flex:1;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0}
+.nav-ico{font-size:20px;line-height:1}
+.nav-lbl{font-size:9px;font-family:monospace;letter-spacing:.5px;color:#aaa}
+.nav-btn.active .nav-lbl{color:#1b4332;font-weight:800}
+
+/* Toast */
+#toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 56px);left:50%;transform:translateX(-50%) translateY(-8px);background:#00e676;color:#000;border-radius:999px;padding:10px 22px;font-family:monospace;font-weight:700;font-size:13px;z-index:999;box-shadow:0 4px 24px rgba(0,230,118,.4);opacity:0;transition:all .2s ease;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Typography */
+h1{font-size:38px;font-weight:900;color:#1b4332;line-height:1.1}
+h2{font-size:22px;font-weight:900;color:#1b4332}
+h3{font-size:17px;font-weight:800;color:#1b4332;margin:0}
+.mono{font-family:monospace;font-size:11px;letter-spacing:1px;color:#888;text-transform:uppercase}
+.sub{font-size:14px;color:#888;line-height:1.5;margin-top:6px}
+
+/* Form */
+label{display:block;font-family:monospace;font-size:11px;letter-spacing:1px;color:#888;text-transform:uppercase;margin:14px 0 6px}
+input,select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:15px;outline:none;-webkit-appearance:none;appearance:none}
+input:focus,select:focus{border-color:#1b4332}
+
+/* Buttons */
+.btn{display:block;width:100%;padding:14px;border-radius:14px;border:none;font-weight:800;font-size:16px;cursor:pointer;margin-top:12px;text-align:center}
+.btn-green{background:#1b4332;color:#fff}
+.btn-green:active{background:#0d2b1e}
+.btn-lime{background:#00e676;color:#000}
+.btn-lime:active{opacity:.85}
+.btn-grey{background:#e0e0e0;color:#aaa;cursor:not-allowed}
+
+/* Cards */
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid #eee}
+.card-green{background:#e8f5e9;border-color:#a5d6a7}
+.card-amber{background:#fff8e1;border:1px solid #ffe082}
+
+/* Chips */
+.chip{display:inline-block;padding:9px 16px;border-radius:999px;border:2px solid #ddd;background:#fff;font-size:13px;font-weight:600;cursor:pointer;margin:0 6px 8px 0;transition:all .15s}
+.chip.on{background:#1b4332;color:#fff;border-color:#1b4332}
+.chip-time{display:inline-block;padding:8px 14px;border-radius:999px;border:2px solid #ddd;background:#fff;font-size:13px;cursor:pointer;margin:0 6px 8px 0;transition:all .15s}
+.chip-time.on{border-color:#00e676;background:#e8f5e9}
+
+/* Step bar */
+.steps{display:flex;gap:6px;margin-bottom:24px}
+.step{height:4px;flex:1;border-radius:999px;background:#ddd;transition:background .3s}
+.step.done{background:#1b4332}
+
+/* Back header */
+.back-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.back-btn{border:none;background:#eee;border-radius:999px;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.back-btn:active{background:#ddd}
+
+/* Check-in */
+.checkin{flex:1;background:#fff;border-radius:14px;padding:14px;text-align:center;border:2px solid #eee;transition:border-color .3s}
+.checkin.here{border-color:#00e676}
+.ci-btn{border:none;border-radius:999px;padding:8px 16px;font-size:12px;font-family:monospace;font-weight:700;cursor:pointer;margin-top:8px}
+
+/* Chat bubbles */
+.bubble{max-width:75%;padding:10px 14px;font-size:14px;line-height:1.5}
+.bubble-me{background:#1b4332;color:#fff;border-radius:18px 18px 4px 18px;align-self:flex-end}
+.bubble-them{background:#fff;color:#333;border-radius:18px 18px 18px 4px;align-self:flex-start;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.bubble-name{font-size:11px;font-weight:700;color:#00a854;margin-bottom:2px}
+.bubble-time{font-size:10px;opacity:.4;text-align:right;margin-top:4px}
+
+/* Badge */
+.badge{font-size:10px;font-family:monospace;font-weight:700;padding:4px 8px;border-radius:999px}
+.badge-open{background:#fff8e1;color:#b35c00;border:1px solid #ffe082}
+.badge-sched{background:#1b4332;color:#fff}
+
+/* Action chip */
+.action-chip{padding:6px 10px;border-radius:999px;border:1px solid #ddd;background:#f5f5f5;font-size:12px;cursor:pointer;white-space:nowrap}
+.action-chip:active{background:#eee}
+
+/* Buddy avatar */
+.avatar{width:46px;height:46px;border-radius:999px;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="toast"></div>
+  <div id="screen"></div>
+  <nav id="nav" style="display:none">
+    <button class="nav-btn" data-s="dashboard" onclick="go('dashboard')"><span class="nav-ico">🏠</span><span class="nav-lbl">HOME</span></button>
+    <button class="nav-btn" data-s="post"      onclick="go('post')">     <span class="nav-ico">📣</span><span class="nav-lbl">POST</span></button>
+    <button class="nav-btn" data-s="schedule"  onclick="go('schedule')"> <span class="nav-ico">📅</span><span class="nav-lbl">SCHEDULE</span></button>
+    <button class="nav-btn" data-s="chat"      onclick="go('chat')">     <span class="nav-ico">💬</span><span class="nav-lbl">CHAT</span></button>
+    <button class="nav-btn" data-s="buddies"   onclick="go('buddies')">  <span class="nav-ico">👥</span><span class="nav-lbl">BUDDIES</span></button>
+  </nav>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const S = {
+  screen:'onboard', step:0, zip:'', stores:[], store:'Kroger',
+  buddy:'', date:'', time:'', checkedIn:false,
+  deals:[
+    {id:1,item:'Ragu Pasta Sauce',store:'Kroger',price:'$3.99',by:'You',ago:'2m ago',status:'open'},
+    {id:2,item:'Tropicana OJ (64oz)',store:'Publix',price:'$5.49',by:'Maria S.',ago:'1h ago',status:'scheduled'},
+  ],
+  msgs:[
+    {id:1,from:'Maria S.',text:'Hey! I saw your pasta sauce deal 👀',time:'2:31pm'},
+    {id:2,from:'you',text:'Yes! BOGO at Kroger, ends Sunday',time:'2:32pm'},
+    {id:3,from:'Maria S.',text:"I'm in! When are you heading there?",time:'2:33pm'},
+  ],
+};
+const STORES=['Kroger','Publix','Walmart','Target','Aldi','Whole Foods'];
+const BUDDIES={
+  Kroger:[{name:'Maria S.',rating:4.9,deals:23,av:'🧑‍🦱'},{name:'James T.',rating:4.7,deals:15,av:'👩‍🦰'}],
+  Publix:[{name:'DeShawn K.',rating:5.0,deals:31,av:'🧔'}],
+};
+const TIMES=['8:00 AM','10:00 AM','12:00 PM','2:00 PM','4:00 PM','6:00 PM'];
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2400);
+}
+function go(s){S.screen=s;render()}
+function qs(id){return document.getElementById(id)}
+function myStores(){return S.stores.length?S.stores:['Kroger','Publix']}
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function updateNav(){
+  const nav=qs('nav');
+  const hide=['onboard'];
+  nav.style.display=hide.includes(S.screen)?'none':'flex';
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.s===S.screen);
+  });
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function render(){
+  updateNav();
+  const el=qs('screen');
+  const map={
+    onboard:renderOnboard, dashboard:renderDashboard, post:renderPost,
+    schedule:renderSchedule, meetup:renderMeetup, chat:renderChat, buddies:renderBuddies
+  };
+  el.innerHTML=(map[S.screen]||renderOnboard)();
+  if(S.screen==='chat'){
+    const msgs=qs('msgs');
+    if(msgs)msgs.scrollTop=msgs.scrollHeight;
+    const inp=qs('chat-inp');
+    if(inp)inp.focus();
+  }
+}
+
+// ── ONBOARDING ─────────────────────────────────────────────────────────────
+function renderOnboard(){
+  if(S.step===0) return `
+    <div class="screen no-nav" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:100dvh;background:linear-gradient(160deg,#1b4332,#2d6a4f);padding:40px 32px">
+      <div style="font-size:80px;margin-bottom:20px" class="fade-in">🛒</div>
+      <h1 style="color:#fff;font-size:44px;margin-bottom:12px" class="slide-up">Bogo<br>Buddy</h1>
+      <p style="color:rgba(255,255,255,.7);font-size:17px;line-height:1.7;max-width:260px" class="slide-up">Split BOGO deals with a neighbor.<br>Shop smarter, save together.</p>
+      <button class="btn btn-lime" style="max-width:280px;margin-top:32px" onclick="S.step=1;render()">Get Started →</button>
+    </div>`;
+
+  if(S.step===1) return `
+    <div class="screen no-nav" style="padding:24px 24px 40px">
+      <div class="steps"><div class="step done"></div><div class="step"></div><div class="step"></div></div>
+      <h2>What's your zip code?</h2>
+      <p class="sub">We'll match you with buddies nearby.</p>
+      <label>ZIP CODE</label>
+      <input id="zip" type="tel" inputmode="numeric" maxlength="5" placeholder="e.g. 33511" value="${S.zip}" oninput="S.zip=this.value;document.getElementById('zip-btn').className='btn '+(S.zip.length>=5?'btn-green':'btn-grey')"/>
+      <button id="zip-btn" class="btn ${S.zip.length>=5?'btn-green':'btn-grey'}" onclick="S.zip.length>=5&&(S.step=2,render())">Next →</button>
+    </div>`;
+
+  if(S.step===2) return `
+    <div class="screen no-nav" style="padding:24px 24px 40px">
+      <div class="steps"><div class="step done"></div><div class="step done"></div><div class="step"></div></div>
+      <h2>Where do you shop?</h2>
+      <p class="sub">Select all your regular stores.</p>
+      <div style="margin-top:16px">
+        ${STORES.map(s=>`<span class="chip ${S.stores.includes(s)?'on':''}" onclick="toggleStore('${s}')">${s}</span>`).join('')}
+      </div>
+      <button class="btn ${S.stores.length?'btn-green':'btn-grey'}" style="margin-top:24px" onclick="S.stores.length&&(S.step=3,render())">Next →</button>
+    </div>`;
+
+  return `
+    <div class="screen no-nav" style="padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;text-align:center">
+      <div class="steps"><div class="step done"></div><div class="step done"></div><div class="step done"></div></div>
+      <div style="font-size:60px;margin-bottom:16px">🎉</div>
+      <h2>You're all set!</h2>
+      <p class="sub" style="max-width:260px;margin:8px auto 0">We found <strong>3 buddies</strong> near you across your stores.</p>
+      <button class="btn btn-green" style="max-width:280px;margin-top:28px" onclick="go('dashboard')">Meet My Buddies →</button>
+    </div>`;
+}
+function toggleStore(s){
+  const i=S.stores.indexOf(s);
+  i>-1?S.stores.splice(i,1):S.stores.push(s);
+  render();
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const ms=myStores();
+  return `
+    <div class="screen">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div><p class="mono">GOOD MORNING</p><h2 style="margin-top:4px">My Stores</h2></div>
+        <button onclick="toast('Profile coming soon!')" style="width:42px;height:42px;border-radius:999px;background:#1b4332;border:none;font-size:18px;cursor:pointer">👤</button>
+      </div>
+      ${ms.map(store=>`
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <h3>${store}</h3>
+              <p style="font-size:12px;color:#888;margin-top:2px">${(BUDDIES[store]||[]).length} buddy${(BUDDIES[store]||[]).length!==1?'s':''} matched</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="action-chip" onclick="go('schedule')">📅 Schedule</button>
+              <button class="action-chip" onclick="S.store='${store}';go('chat')">💬 Chat</button>
+            </div>
+          </div>
+        </div>`).join('')}
+      <p class="mono" style="margin:16px 0 10px">RECENT DEALS</p>
+      ${S.deals.map(d=>`
+        <div style="background:${d.status==='scheduled'?'#e8f5e9':'#fff'};border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid ${d.status==='scheduled'?'#a5d6a7':'#eee'};display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <p style="font-weight:700;font-size:14px;color:#1b4332;margin:0">${d.item}</p>
+            <p style="font-size:12px;color:#888;margin:2px 0 0">${d.store} · ${d.price} · ${d.ago}</p>
+          </div>
+          <span class="badge badge-${d.status==='scheduled'?'sched':'open'}">${d.status.toUpperCase()}</span>
+        </div>`).join('')}
+      <button class="btn btn-lime" style="margin-top:12px" onclick="go('post')">+ Post a BOGO Deal</button>
+    </div>`;
+}
+
+// ── POST DEAL ──────────────────────────────────────────────────────────────
+function renderPost(){
+  return `
+    <div class="screen">
+      <div class="back-hdr"><button class="back-btn" onclick="go('dashboard')">←</button><h2>Post a Deal</h2></div>
+      <p class="sub">Spotted a BOGO? Let your buddies know!</p>
+      <label>STORE</label>
+      <select id="p-store">${myStores().map(s=>`<option>${s}</option>`).join('')}</select>
+      <label>ITEM NAME</label>
+      <input id="p-item" type="text" placeholder="e.g. Ragu Pasta Sauce"/>
+      <label>PRICE (EACH)</label>
+      <input id="p-price" type="text" inputmode="decimal" placeholder="e.g. $3.99"/>
+      <label>NOTE (OPTIONAL)</label>
+      <input id="p-note" type="text" placeholder="e.g. Aisle 7, ends Sunday"/>
+      <button class="btn btn-green" style="margin-top:20px" onclick="postDeal()">📣 Notify My Buddies</button>
+    </div>`;
+}
+function postDeal(){
+  const item=qs('p-item').value.trim();
+  if(!item){toast('Enter an item name first!');return}
+  S.deals.unshift({id:Date.now(),item,store:qs('p-store').value,price:qs('p-price').value||'?',by:'You',ago:'just now',status:'open'});
+  toast('Deal posted! Buddies notified 🔔');
+  setTimeout(()=>go('dashboard'),350);
+}
+
+// ── SCHEDULE ───────────────────────────────────────────────────────────────
+function renderSchedule(){
+  const allB=['Maria S.','James T.','DeShawn K.'];
+  return `
+    <div class="screen">
+      <div class="back-hdr"><button class="back-btn" onclick="go('dashboard')">←</button><h2>Schedule Store Run</h2></div>
+      <p class="sub">Pick a time to shop with your buddy.</p>
+      <label>SELECT BUDDY</label>
+      <div style="margin-top:4px">${allB.map(b=>`<span class="chip ${S.buddy===b?'on':''}" onclick="S.buddy='${b}';render()">${b}</span>`).join('')}</div>
+      <label>DATE</label>
+      <input id="sched-date" type="date" value="${S.date}" oninput="S.date=this.value" min="${new Date().toISOString().split('T')[0]}"/>
+      <label>TIME</label>
+      <div style="margin-top:4px">${TIMES.map(t=>`<span class="chip-time ${S.time===t?'on':''}" onclick="S.time='${t}';render()">${t}</span>`).join('')}</div>
+      <button class="btn ${S.buddy&&S.date&&S.time?'btn-green':'btn-grey'}" style="margin-top:20px" onclick="scheduleRun()">📅 Send Invite to Buddy</button>
+    </div>`;
+}
+function scheduleRun(){
+  if(!S.buddy||!S.date||S.time===''){toast('Fill in all fields first!');return}
+  toast('Store run scheduled! ✅');
+  setTimeout(()=>go('meetup'),350);
+}
+
+// ── MEETUP ─────────────────────────────────────────────────────────────────
+function renderMeetup(){
+  const buddy=S.buddy||'Maria S.';
+  const dateStr=S.date?new Date(S.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):'Sunday, March 15';
+  return `
+    <div class="screen">
+      <div class="back-hdr"><button class="back-btn" onclick="go('dashboard')">←</button><h2>Live Meetup</h2></div>
+      <div style="background:linear-gradient(135deg,#1b4332,#2d6a4f);border-radius:20px;padding:20px;margin-bottom:20px;color:#fff;text-align:center">
+        <p class="mono" style="color:rgba(255,255,255,.6);margin-bottom:4px">TODAY'S RUN</p>
+        <h3 style="color:#fff;font-size:20px">Kroger · Brandon</h3>
+        <p style="color:rgba(255,255,255,.8);margin-top:8px;font-size:14px">${dateStr} · ${S.time||'10:00 AM'}</p>
+        <p style="color:#00e676;font-weight:700;margin-top:4px;font-size:14px">with ${buddy}</p>
+      </div>
+      <div class="card card-amber" style="margin-bottom:16px">
+        <p class="mono" style="color:#b35c00;margin-bottom:4px">BOGO TARGET</p>
+        <p style="font-weight:800;font-size:16px;color:#1b4332;margin:0">Ragu Pasta Sauce</p>
+        <p style="font-size:13px;color:#888;margin:4px 0 0">$3.99 each · You save $3.99 total</p>
+      </div>
+      <p class="mono" style="margin-bottom:10px">ARRIVAL CHECK-IN</p>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <div class="checkin ${S.checkedIn?'here':''}">
+          <p style="font-weight:700;font-size:13px;color:#1b4332;margin:0 0 8px">You</p>
+          <button class="ci-btn" style="background:${S.checkedIn?'#00e676':'#f5f5f5'};color:${S.checkedIn?'#000':'#999'}" onclick="checkIn()">${S.checkedIn?'✓ HERE':"I'm Here!"}</button>
+        </div>
+        <div class="checkin">
+          <p style="font-weight:700;font-size:13px;color:#1b4332;margin:0 0 8px">${buddy}</p>
+          <button class="ci-btn" style="background:#f5f5f5;color:#999;cursor:default">Pending…</button>
+        </div>
+      </div>
+      ${S.checkedIn?`<div class="card card-green" style="margin-bottom:12px"><p style="font-weight:700;color:#1b4332;font-size:14px;margin:0">✅ You're checked in!</p><p style="font-size:13px;color:#555;margin:4px 0 0">Waiting for ${buddy} to arrive… sent a ping!</p></div>`:''}
+      <button class="btn btn-green" onclick="S.store='Kroger';go('chat')">💬 Chat with ${buddy}</button>
+    </div>`;
+}
+function checkIn(){S.checkedIn=true;toast('Checked in! 📍');render()}
+
+// ── CHAT ───────────────────────────────────────────────────────────────────
+function renderChat(){
+  const buddyNames=(BUDDIES[S.store]||[]).map(b=>b.name).join(', ')||'No buddies yet';
+  return `
+    <div class="screen no-pad" style="display:flex;flex-direction:column;height:100%">
+      <div style="padding:14px 20px 10px;border-bottom:1px solid #eee;background:#f8f4ee;flex-shrink:0">
+        <div class="back-hdr" style="margin-bottom:2px">
+          <button class="back-btn" onclick="go('dashboard')">←</button>
+          <h2>${S.store} Buddies</h2>
+        </div>
+        <p style="font-size:12px;color:#888;margin:0 0 0 48px">${buddyNames}</p>
+      </div>
+      <div id="msgs" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f8f4ee">
+        ${S.msgs.map(m=>m.from==='you'
+          ?`<div class="bubble bubble-me">${m.text}<div class="bubble-time">${m.time}</div></div>`
+          :`<div class="bubble bubble-them"><div class="bubble-name">${m.from}</div>${m.text}<div class="bubble-time">${m.time}</div></div>`
+        ).join('')}
+      </div>
+      <div style="padding:10px 14px;border-top:1px solid #eee;background:#fff;display:flex;gap:8px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));flex-shrink:0">
+        <input id="chat-inp" type="text" placeholder="Message your buddies…" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button onclick="sendChat()" style="width:44px;height:44px;background:#1b4332;color:#fff;border:none;border-radius:12px;font-size:18px;cursor:pointer;flex-shrink:0">↑</button>
+      </div>
+    </div>`;
+}
+function sendChat(){
+  const inp=qs('chat-inp');
+  if(!inp||!inp.value.trim())return;
+  const now=new Date();
+  S.msgs.push({id:Date.now(),from:'you',text:inp.value.trim(),time:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+  inp.value='';
+  render();
+  setTimeout(()=>{const m=qs('msgs');if(m)m.scrollTop=m.scrollHeight;const i=qs('chat-inp');if(i)i.focus()},30);
+}
+
+// ── BUDDIES ────────────────────────────────────────────────────────────────
+function renderBuddies(){
+  const ms=myStores();
+  return `
+    <div class="screen">
+      <div class="back-hdr"><button class="back-btn" onclick="go('dashboard')">←</button><h2>My Buddies</h2></div>
+      ${ms.map(store=>`
+        <p class="mono" style="margin-bottom:10px">${store}</p>
+        ${(BUDDIES[store]||[]).map(b=>`
+          <div class="card" style="display:flex;align-items:center;gap:14px">
+            <div class="avatar">${b.av}</div>
+            <div style="flex:1">
+              <h3>${b.name}</h3>
+              <p style="font-size:12px;color:#888;margin-top:2px">⭐ ${b.rating} · ${b.deals} deals split</p>
+            </div>
+            <button onclick="toast('Looking for a new buddy for ${store}…')" style="border:1px solid #ddd;background:#fff;border-radius:8px;padding:6px 10px;font-size:11px;font-family:monospace;cursor:pointer;color:#888">Replace</button>
+          </div>`).join('')}
+        ${!(BUDDIES[store]||[]).length?`<div class="card" style="text-align:center;padding:20px"><p style="font-size:28px;margin-bottom:8px">🔍</p><p style="color:#888;font-size:13px">Finding buddies near you…</p></div>`:''}
+        <button onclick="toast('Looking for more buddies nearby…')" style="width:100%;padding:12px;border-radius:12px;border:2px dashed #ddd;background:transparent;font-size:14px;color:#888;cursor:pointer;margin-bottom:20px">+ Add Another Buddy</button>
+      `).join('')}
+    </div>`;
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { ToastProvider } from './components/Toast'
 import BottomNav from './components/BottomNav'
@@ -51,9 +51,9 @@ function Layout() {
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Layout />
-      </BrowserRouter>
+      </HashRouter>
     </AppProvider>
   )
 }
